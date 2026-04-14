@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -24,7 +25,7 @@ class SummarizeHandoffTests(unittest.TestCase):
 
     def test_json_handoff_is_structured(self) -> None:
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(self.session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(self.session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -41,7 +42,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_paths.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -57,7 +58,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_clear.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -71,7 +72,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_clear_stale_title.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -85,7 +86,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_tool_result_user.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -99,7 +100,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_latest_tool_only.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -114,7 +115,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_empty_stop_reason_latest.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -129,7 +130,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_filenames.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -144,7 +145,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_windows_paths.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -159,7 +160,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_partial.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -173,7 +174,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_out_of_order_timestamps.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -186,7 +187,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_command_markup.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -201,7 +202,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_relative_paths.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path)],
+            [sys.executable, str(SCRIPT), "--session", str(session_path)],
             text=True,
             capture_output=True,
             check=True,
@@ -233,7 +234,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         session_path.write_text("\n".join(json.dumps(entry) for entry in entries) + "\n", encoding="utf-8")
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -266,7 +267,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         session_path.write_text("\n".join(json.dumps(entry) for entry in entries) + "\n", encoding="utf-8")
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,
@@ -277,7 +278,7 @@ class SummarizeHandoffTests(unittest.TestCase):
 
     def test_missing_session_path_returns_clean_error(self) -> None:
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(self.temp_dir / "missing.jsonl")],
+            [sys.executable, str(SCRIPT), "--session", str(self.temp_dir / "missing.jsonl")],
             text=True,
             capture_output=True,
         )
@@ -290,7 +291,7 @@ class SummarizeHandoffTests(unittest.TestCase):
         shutil.copy(FIXTURES / "session_cwd_clear.jsonl", session_path)
 
         result = subprocess.run(
-            ["python3", str(SCRIPT), "--session", str(session_path), "--json"],
+            [sys.executable, str(SCRIPT), "--session", str(session_path), "--json"],
             text=True,
             capture_output=True,
             check=True,

@@ -205,6 +205,12 @@ Run the test suite:
 python3 -m unittest discover -s tests -v
 ```
 
+Verify the packaged skill bundle matches the checked-in source files:
+
+```bash
+python3 scripts/verify_packaged_skill.py
+```
+
 The repository includes:
 
 - `scripts/doctor.py` for local diagnostics

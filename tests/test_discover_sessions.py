@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -46,7 +47,7 @@ class DiscoverSessionsTests(unittest.TestCase):
 
     def run_script(self, *args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["python3", str(SCRIPT), *args],
+            [sys.executable, str(SCRIPT), *args],
             text=True,
             capture_output=True,
             check=True,

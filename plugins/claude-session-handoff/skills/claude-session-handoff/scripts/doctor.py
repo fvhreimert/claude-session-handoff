@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import platform
 import sys
@@ -29,8 +30,26 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     codex_home = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")).expanduser()
+    plugins_home = Path.home() / "plugins"
+    marketplace_path = Path.home() / ".agents" / "plugins" / "marketplace.json"
     skill_root = Path(__file__).resolve().parent.parent
     install_target = codex_home / "skills" / skill_root.name
+    plugin_source = skill_root / "plugins" / "claude-session-handoff"
+    plugin_target = plugins_home / "claude-session-handoff"
+    plugin_registered = False
+
+    if marketplace_path.exists():
+        try:
+            with marketplace_path.open() as handle:
+                marketplace_payload = json.load(handle)
+            plugins = marketplace_payload.get("plugins", [])
+            if isinstance(plugins, list):
+                plugin_registered = any(
+                    isinstance(entry, dict) and entry.get("name") == "claude-session-handoff"
+                    for entry in plugins
+                )
+        except json.JSONDecodeError:
+            plugin_registered = False
 
     print("claude-session-handoff doctor")
     print(f"Platform: {platform.system()} {platform.release()}")
@@ -38,6 +57,11 @@ def main() -> int:
     print(f"Skill root: {skill_root}")
     print(f"Installed in Codex: {'yes' if install_target.exists() else 'no'}")
     print(f"Expected install target: {install_target}")
+    print(f"Plugin package present: {'yes' if plugin_source.exists() else 'no'}")
+    print(f"Installed in personal plugins: {'yes' if plugin_target.exists() else 'no'}")
+    print(f"Personal plugin target: {plugin_target}")
+    print(f"Registered in personal marketplace: {'yes' if plugin_registered else 'no'}")
+    print(f"Personal marketplace path: {marketplace_path}")
     if args.cwd:
         print(f"Current cwd: {Path(args.cwd).expanduser()}")
 

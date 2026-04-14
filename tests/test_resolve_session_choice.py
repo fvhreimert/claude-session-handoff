@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -29,7 +30,7 @@ class ResolveSessionChoiceTests(unittest.TestCase):
     def test_field_output_returns_exact_path(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ROOT / "scripts" / "discover_sessions.py"),
                 "--claude-projects-dir",
                 str(self.projects_dir),
@@ -48,7 +49,7 @@ class ResolveSessionChoiceTests(unittest.TestCase):
 
         result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(SCRIPT),
                 "--snapshot",
                 str(self.snapshot_path),
@@ -66,7 +67,7 @@ class ResolveSessionChoiceTests(unittest.TestCase):
     def test_snapshot_keeps_choice_stable_when_newer_file_appears(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ROOT / "scripts" / "discover_sessions.py"),
                 "--claude-projects-dir",
                 str(self.projects_dir),
@@ -92,7 +93,7 @@ class ResolveSessionChoiceTests(unittest.TestCase):
 
         result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(SCRIPT),
                 "--snapshot",
                 str(self.snapshot_path),
@@ -110,7 +111,7 @@ class ResolveSessionChoiceTests(unittest.TestCase):
     def test_snapshot_picker_and_resolution_stay_aligned_end_to_end(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ROOT / "scripts" / "discover_sessions.py"),
                 "--claude-projects-dir",
                 str(self.projects_dir),
@@ -136,7 +137,7 @@ class ResolveSessionChoiceTests(unittest.TestCase):
 
         picker_result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ROOT / "scripts" / "discover_sessions.py"),
                 "--snapshot-in",
                 str(self.snapshot_path),
@@ -151,7 +152,7 @@ class ResolveSessionChoiceTests(unittest.TestCase):
 
         resolve_result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(SCRIPT),
                 "--snapshot",
                 str(self.snapshot_path),
@@ -169,7 +170,7 @@ class ResolveSessionChoiceTests(unittest.TestCase):
 
         summarize_result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ROOT / "scripts" / "summarize_handoff.py"),
                 "--session",
                 selected_path,
