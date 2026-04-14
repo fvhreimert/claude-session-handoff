@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resume Claude Session"
+  short_description: "Recover an ended Claude Code session into a Codex handoff"
+  default_prompt: "Find my last 5 Claude sessions and ask which one to resume."

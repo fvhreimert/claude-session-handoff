@@ -1,0 +1,12 @@
+{"sessionId":"session-command-markup","timestamp":"2026-04-13T13:00:00Z","cwd":"/repo/demo","type":"user","message":{"content":[{"type":"text","text":"<command-name>npm test</command-name>"}]}}
+{"sessionId":"session-command-markup","timestamp":"2026-04-13T13:01:00Z","cwd":"/repo/demo","type":"user","message":{"content":[{"type":"text","text":"Real task after command wrapper"}]}}
+{"sessionId":"session-command-markup","timestamp":"2026-04-13T13:02:00Z","cwd":"/repo/demo","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Working on the real task."}]}}
++    def test_picker_output_includes_preview_for_disambiguation(self) -> None:
++        result = self.run_script(
++            "--claude-projects-dir",
++            str(self.projects_dir),
++            "--cwd",
++            "/work/demo",
++            "--picker",
++        )
++        self.assertIn("   Preview:", result.stdout)

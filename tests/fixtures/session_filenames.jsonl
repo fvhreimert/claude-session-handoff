@@ -1,0 +1,2 @@
+{"sessionId":"session-filenames","timestamp":"2026-04-13T10:00:00Z","cwd":"/repo/demo","type":"user","message":{"content":[{"type":"text","text":"Find the changed files"}]}}
+{"sessionId":"session-filenames","timestamp":"2026-04-13T10:01:00Z","cwd":"/repo/demo","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"I found a few file paths."}]},"toolUseResult":{"filenames":["README","Dockerfile","src/main"]}}

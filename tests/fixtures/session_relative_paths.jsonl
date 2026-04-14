@@ -1,0 +1,2 @@
+{"sessionId":"session-relative-paths","timestamp":"2026-04-14T12:00:00Z","cwd":"/repo/project","type":"user","message":{"content":[{"type":"text","text":"Task"}]},"toolUseResult":{"items":[{"path":"src/app.py"}]}}
+{"sessionId":"session-relative-paths","timestamp":"2026-04-14T12:01:00Z","cwd":"/repo/project","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Done"}]}}

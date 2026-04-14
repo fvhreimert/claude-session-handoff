@@ -1,0 +1,5 @@
+{"sessionId":"session-clear","timestamp":"2026-04-13T08:00:00Z","cwd":"/repo/demo","customTitle":"First task title","type":"user","message":{"content":[{"type":"text","text":"First task"}]}}
+{"sessionId":"session-clear","timestamp":"2026-04-13T08:01:00Z","cwd":"/repo/demo","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Done with the first task."}]}}
+{"sessionId":"session-clear","timestamp":"2026-04-13T08:02:00Z","cwd":"/repo/demo","type":"user","message":{"content":[{"type":"text","text":"/clear"}]}}
+{"sessionId":"session-clear","timestamp":"2026-04-13T08:03:00Z","cwd":"/repo/demo","customTitle":"Second task title","type":"user","message":{"content":[{"type":"text","text":"Second task"}]}}
+{"sessionId":"session-clear","timestamp":"2026-04-13T08:04:00Z","cwd":"/repo/demo","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Ready for the second task."}]}}
