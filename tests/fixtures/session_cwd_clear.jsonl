@@ -1,0 +1,5 @@
+{"sessionId":"session-cwd-clear","timestamp":"2026-04-13T17:00:00Z","cwd":"/repo/old","customTitle":"Old repo task","type":"user","message":{"content":[{"type":"text","text":"Work in old repo"}]}}
+{"sessionId":"session-cwd-clear","timestamp":"2026-04-13T17:01:00Z","cwd":"/repo/old","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Old repo done."}]}}
+{"sessionId":"session-cwd-clear","timestamp":"2026-04-13T17:02:00Z","cwd":"/repo/new","type":"user","message":{"content":[{"type":"text","text":"/clear"}]}}
+{"sessionId":"session-cwd-clear","timestamp":"2026-04-13T17:03:00Z","cwd":"/repo/new","type":"user","message":{"content":[{"type":"text","text":"New repo task"}]}}
+{"sessionId":"session-cwd-clear","timestamp":"2026-04-13T17:04:00Z","cwd":"/repo/new","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Working in the new repo."}]}}

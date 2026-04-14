@@ -1,0 +1,5 @@
+{"sessionId":"session-clear-stale-title","timestamp":"2026-04-13T14:00:00Z","cwd":"/repo/demo","customTitle":"Old task title","type":"user","message":{"content":[{"type":"text","text":"Old task"}]}}
+{"sessionId":"session-clear-stale-title","timestamp":"2026-04-13T14:01:00Z","cwd":"/repo/demo","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Completed the old task."}]}}
+{"sessionId":"session-clear-stale-title","timestamp":"2026-04-13T14:02:00Z","cwd":"/repo/demo","type":"user","message":{"content":[{"type":"text","text":"/clear"}]}}
+{"sessionId":"session-clear-stale-title","timestamp":"2026-04-13T14:03:00Z","cwd":"/repo/demo","type":"user","message":{"content":[{"type":"text","text":"new task after clear"}]}}
+{"sessionId":"session-clear-stale-title","timestamp":"2026-04-13T14:04:00Z","cwd":"/repo/demo","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Working on the new task."}]}}

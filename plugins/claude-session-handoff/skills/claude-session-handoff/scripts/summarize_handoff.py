@@ -1,0 +1,465 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+from datetime import datetime
+from pathlib import Path, PurePosixPath, PureWindowsPath
+
+
+TRUSTED_FILE_PATH_KEYS = (
+    "file_path",
+    "target_file",
+    "source_file",
+    "filenames",
+)
+
+GENERIC_FILE_PATH_KEYS = ("path",)
+
+COMMON_EXTENSIONLESS_FILES = {
+    "dockerfile",
+    "makefile",
+    "readme",
+    "license",
+    "gemfile",
+    "procfile",
+    "rakefile",
+    "justfile",
+    "cargo.lock",
+}
+
+IGNORED_PATH_PARTS = (
+    "/.claude/plans/",
+    "/.claude/projects/",
+    "/.claude/sessions/",
+)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Summarize a Claude session transcript into a Codex handoff."
+    )
+    parser.add_argument("--session", required=True, help="Path to a Claude session JSONL file.")
+    parser.add_argument(
+        "--tail",
+        type=int,
+        default=200,
+        help="How many transcript entries to inspect from the tail. Default: 200.",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit the handoff as JSON instead of a human-readable report.",
+    )
+    return parser.parse_args()
+
+
+def clean_text(value: str | None) -> str:
+    if not value:
+        return ""
+    text = value.replace("\r", "\n")
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = " ".join(text.replace("\n", " ").split())
+    return text.strip()
+
+
+def has_local_command_markup(value: str | None) -> bool:
+    if not value:
+        return False
+    lowered = value.lower()
+    return "<command-name>" in lowered or "<local-command-caveat>" in lowered
+
+
+def parse_iso(timestamp: str | None):
+    if not timestamp:
+        return None
+    try:
+        return datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def truncate(text: str, limit: int = 280) -> str:
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rstrip() + "…"
+
+
+def parse_message_text(message: object, include_tool_results: bool = False) -> str:
+    if isinstance(message, dict):
+        content = message.get("content")
+        if isinstance(content, str):
+            return clean_text(content)
+        if isinstance(content, list):
+            parts: list[str] = []
+            for item in content:
+                if not isinstance(item, dict):
+                    continue
+                item_type = item.get("type")
+                if item_type == "text":
+                    raw_text = item.get("text")
+                    if has_local_command_markup(raw_text):
+                        continue
+                    parts.append(clean_text(raw_text))
+                elif include_tool_results and item_type == "tool_result":
+                    parts.append(clean_text(item.get("content")))
+            return clean_text(" ".join(part for part in parts if part))
+    return ""
+
+
+def raw_message_text(message: object) -> str:
+    if not isinstance(message, dict):
+        return ""
+    content = message.get("content")
+    if isinstance(content, str):
+        return content
+    return ""
+
+
+def extract_tool_names(message: object) -> list[str]:
+    if not isinstance(message, dict):
+        return []
+    content = message.get("content")
+    if not isinstance(content, list):
+        return []
+    tool_names: list[str] = []
+    for item in content:
+        if isinstance(item, dict) and item.get("type") == "tool_use" and isinstance(item.get("name"), str):
+            tool_names.append(item["name"])
+    return tool_names
+
+
+def extract_paths_from_obj(obj: object, found: dict[str, bool]) -> None:
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if key == "filenames" and isinstance(value, list):
+                for item in value:
+                    if isinstance(item, str) and item.strip():
+                        found[item.strip()] = True
+            elif key in TRUSTED_FILE_PATH_KEYS and isinstance(value, str) and value.strip():
+                found[value.strip()] = True
+            elif key in GENERIC_FILE_PATH_KEYS and isinstance(value, str) and value.strip():
+                found.setdefault(value.strip(), False)
+            else:
+                extract_paths_from_obj(value, found)
+    elif isinstance(obj, list):
+        for item in obj:
+            extract_paths_from_obj(item, found)
+
+
+def is_clear_command(text: str) -> bool:
+    return text.strip().lower() in {"clear", "/clear", "clear clear", "/clear clear"}
+
+
+def substantive_user_text(entry: dict) -> str:
+    if entry.get("type") != "user":
+        return ""
+    raw_text = raw_message_text(entry.get("message"))
+    if "<local-command-caveat>" in raw_text.lower():
+        return ""
+    if "<command-name>" in raw_text.lower():
+        return ""
+    text = parse_message_text(entry.get("message"))
+    lowered = text.lower()
+    if not text:
+        return ""
+    if "caveat: the messages below were generated by the user while running local commands" in lowered:
+        return ""
+    if is_clear_command(text) or text == "usage":
+        return ""
+    return text
+
+
+def assistant_text(entry: dict) -> str:
+    if entry.get("type") != "assistant":
+        return ""
+    return parse_message_text(entry.get("message"))
+
+
+def detect_path_style(path_text: str) -> str:
+    if re.match(r"^[A-Za-z]:[\\/]", path_text):
+        return "windows"
+    if path_text.startswith("\\\\"):
+        return "windows"
+    if "\\" in path_text and "/" not in path_text:
+        return "windows"
+    return "posix"
+
+
+def build_pure_path(path_text: str, style: str):
+    if style == "windows":
+        return PureWindowsPath(path_text)
+    return PurePosixPath(path_text)
+
+
+def render_pure_path(path_obj, style: str) -> str:
+    if style == "windows":
+        return str(path_obj)
+    return path_obj.as_posix()
+
+
+def host_path_style() -> str:
+    return "windows" if os.name == "nt" else "posix"
+
+
+def normalized_parts(path_obj, style: str) -> tuple[str, ...]:
+    parts = path_obj.parts
+    if style == "windows":
+        return tuple(part.casefold() for part in parts)
+    return tuple(parts)
+
+
+def format_paths(paths: list[str], session_dir: str) -> str:
+    if not paths:
+        return "none inferred"
+    rendered: list[str] = []
+    for path in paths[:8]:
+        try:
+            if is_absolute_path_text(path):
+                rendered.append(path)
+                continue
+            if not session_dir:
+                rendered.append(path)
+                continue
+            style = detect_path_style(session_dir)
+            resolved = build_pure_path(session_dir, style) / build_pure_path(path, style)
+            rendered.append(render_pure_path(resolved, style))
+        except (OSError, ValueError):
+            rendered.append(path)
+    return ", ".join(rendered)
+
+
+def is_under_base(candidate, base, style: str) -> bool:
+    base_parts = normalized_parts(base, style)
+    candidate_parts = normalized_parts(candidate, style)
+    if len(base_parts) > len(candidate_parts):
+        return False
+    return candidate_parts[: len(base_parts)] == base_parts
+
+
+def looks_file_like(path_text: str) -> bool:
+    name = re.split(r"[\\/]", path_text.rstrip("/\\"))[-1].strip()
+    if not name or name in {".", ".."}:
+        return False
+    if "." in name.strip("."):
+        return True
+    if name.lower() in COMMON_EXTENSIONLESS_FILES:
+        return True
+    return False
+
+
+def is_absolute_path_text(path_text: str) -> bool:
+    if re.match(r"^[A-Za-z]:[\\/]", path_text):
+        return True
+    if path_text.startswith("\\\\"):
+        return True
+    return Path(path_text).is_absolute()
+
+
+def normalize_candidate_paths(paths: dict[str, bool], repo_cwd: str) -> list[str]:
+    repo_style = detect_path_style(repo_cwd) if repo_cwd else None
+    repo_base = build_pure_path(repo_cwd, repo_style) if repo_cwd else None
+    normalized: list[str] = []
+    for raw_path, trusted in sorted(paths.items()):
+        raw_is_absolute = is_absolute_path_text(raw_path)
+        raw_style = detect_path_style(raw_path) if ("\\" in raw_path or raw_is_absolute) else repo_style or host_path_style()
+        raw_candidate = build_pure_path(raw_path, raw_style)
+        candidate = raw_candidate
+        candidate_style = raw_style
+        if not raw_is_absolute and repo_base is not None:
+            candidate = repo_base / build_pure_path(raw_path, repo_style)
+            candidate_style = repo_style
+
+        expanded = render_pure_path(candidate if repo_base is not None or raw_is_absolute else raw_candidate, candidate_style)
+        matchable = path_match_text(expanded)
+        if any(part in matchable for part in IGNORED_PATH_PARTS):
+            continue
+        if expanded.endswith(("/", "\\")):
+            continue
+        if re.split(r"[\\/]", expanded.rstrip("/\\"))[-1] in {"", ".", ".."}:
+            continue
+        if not trusted:
+            if repo_base is None:
+                continue
+            if not raw_is_absolute:
+                candidate = repo_base / build_pure_path(raw_path, repo_style)
+                candidate_style = repo_style
+            if not is_under_base(candidate, repo_base, repo_style):
+                continue
+            if not looks_file_like(render_pure_path(candidate, candidate_style)):
+                continue
+        if candidate_style == host_path_style():
+            concrete = Path(render_pure_path(candidate, candidate_style)).expanduser()
+            if concrete.exists() and concrete.is_dir():
+                continue
+        normalized.append(expanded)
+    return normalized
+
+
+def path_match_text(path_text: str) -> str:
+    return path_text.replace("\\", "/").lower()
+
+
+def main() -> int:
+    args = parse_args()
+    session_path = Path(args.session).expanduser()
+    entries: list[dict] = []
+    session_title = ""
+
+    try:
+        with session_path.open("r", encoding="utf-8") as handle:
+            for raw_line in handle:
+                raw_line = raw_line.strip()
+                if not raw_line:
+                    continue
+                try:
+                    entries.append(json.loads(raw_line))
+                except json.JSONDecodeError:
+                    continue
+    except OSError as exc:
+        raise SystemExit(f"Could not read Claude session file {session_path}: {exc}") from exc
+
+    if not entries:
+        raise SystemExit(f"No parseable transcript entries found in {session_path}")
+
+    session_id = session_path.stem
+    current_segment_title = ""
+    current_segment_cwd = ""
+    objective = ""
+    latest_timestamp = ""
+    latest_timestamp_dt = None
+    touched_paths: dict[str, bool] = {}
+    parse_errors = 0
+
+    for entry in entries:
+        if entry.get("sessionId"):
+            session_id = entry["sessionId"]
+        if entry.get("customTitle"):
+            current_segment_title = clean_text(entry["customTitle"])
+        if entry.get("cwd"):
+            current_segment_cwd = entry["cwd"]
+        entry_timestamp = entry.get("timestamp")
+        if entry_timestamp:
+            parsed_timestamp = parse_iso(entry_timestamp)
+            if parsed_timestamp is not None:
+                if latest_timestamp_dt is None or parsed_timestamp > latest_timestamp_dt:
+                    latest_timestamp_dt = parsed_timestamp
+                    latest_timestamp = entry_timestamp
+            elif not latest_timestamp:
+                latest_timestamp = entry_timestamp
+        parsed_user_text = parse_message_text(entry.get("message"))
+        text = substantive_user_text(entry)
+        if entry.get("type") == "user" and is_clear_command(parsed_user_text):
+            objective = ""
+            current_segment_title = ""
+            current_segment_cwd = entry.get("cwd") or ""
+        elif not objective and text:
+            objective = truncate(text, 400)
+        extract_paths_from_obj(entry.get("message"), touched_paths)
+        extract_paths_from_obj(entry.get("toolUseResult"), touched_paths)
+
+    with session_path.open("r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+            try:
+                json.loads(raw_line)
+            except json.JSONDecodeError:
+                parse_errors += 1
+
+    tail_entries = entries[-max(args.tail, 1) :]
+    recent_user = ""
+    latest_assistant_text = ""
+    latest_assistant_tools: list[str] = []
+    latest_assistant_stop_reason = ""
+    open_thread = ""
+    saw_latest_assistant = False
+
+    for entry in reversed(tail_entries):
+        if entry.get("type") == "assistant" and not saw_latest_assistant:
+            message = entry.get("message")
+            if isinstance(message, dict):
+                latest_assistant_stop_reason = str(message.get("stop_reason") or "")
+                latest_assistant_tools = extract_tool_names(message)
+            latest_assistant_text = truncate(assistant_text(entry), 500) if assistant_text(entry) else ""
+            saw_latest_assistant = True
+        if not recent_user:
+            text = substantive_user_text(entry)
+            if text:
+                recent_user = truncate(text, 500)
+
+    if latest_assistant_stop_reason == "tool_use":
+        open_thread = "Claude ended while preparing or awaiting a tool-driven step."
+    else:
+        if recent_user:
+            open_thread = f"Most recent user ask: {truncate(recent_user, 220)}"
+        elif latest_assistant_text:
+            open_thread = "Session appears to have ended after the last assistant reply."
+        else:
+            open_thread = "No clear unresolved thread could be inferred from the transcript tail."
+
+    title = current_segment_title or objective or f"Session {session_id}"
+
+    recent_context_parts: list[str] = []
+    if recent_user:
+        recent_context_parts.append(f"Latest user context: {recent_user}")
+    if latest_assistant_text:
+        recent_context_parts.append(f"Latest assistant output: {latest_assistant_text}")
+    elif latest_assistant_tools:
+        recent_context_parts.append(
+            f"Latest assistant activity: prepared tool calls to {', '.join(latest_assistant_tools)}."
+        )
+    recent_context = "\n".join(recent_context_parts) if recent_context_parts else "No recent conversational context could be extracted."
+
+    if parse_errors:
+        confidence = f"partial local transcript; skipped {parse_errors} malformed JSONL entr{'y' if parse_errors == 1 else 'ies'}"
+    else:
+        confidence = "complete local transcript"
+
+    handoff = {
+        "session_title": title,
+        "session_id": session_id,
+        "repo": current_segment_cwd or "unknown cwd",
+        "transcript": str(session_path),
+        "last_updated": latest_timestamp or None,
+        "original_objective": objective or "No substantive user prompt was found.",
+        "recent_context": recent_context,
+        "likely_files": normalize_candidate_paths(touched_paths, current_segment_cwd),
+        "open_thread": open_thread,
+        "confidence": f"Recovered from {confidence}.",
+    }
+
+    if args.json:
+        print(json.dumps(handoff, indent=2))
+        return 0
+
+    print(f"Session: {handoff['session_title']} ({handoff['session_id']})")
+    print(f"Repo: {handoff['repo']}")
+    print(f"Transcript: {handoff['transcript']}")
+    if handoff["last_updated"]:
+        print(f"Last updated: {handoff['last_updated']}")
+    print()
+    print("Original objective:")
+    print(handoff["original_objective"])
+    print()
+    print("Recent context:")
+    print(handoff["recent_context"])
+    print()
+    print("Likely files:")
+    path_base = current_segment_cwd or str(session_path.parent)
+    print(format_paths(handoff["likely_files"], path_base))
+    print()
+    print("Open thread:")
+    print(handoff["open_thread"])
+    print()
+    print("Confidence:")
+    print(handoff["confidence"])
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

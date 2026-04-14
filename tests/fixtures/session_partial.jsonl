@@ -1,0 +1,3 @@
+{"sessionId":"session-partial","timestamp":"2026-04-13T12:00:00Z","cwd":"/repo/demo","type":"user","message":{"content":[{"type":"text","text":"Finish the task"}]}}
+{"sessionId":"session-partial","timestamp":"2026-04-13T12:01:00Z","cwd":"/repo/demo","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"I started the work."}]}}
+{"sessionId":"session-partial","timestamp":"2026-04-13T12:02:00Z","cwd":"/repo/demo","type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"broken"}]}
