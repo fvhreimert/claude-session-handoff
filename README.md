@@ -4,6 +4,13 @@ Recover a previous Claude Code session into a Codex handoff from local transcrip
 
 This is for the common failure mode where Claude Code hit a token limit, lost context, or the session ended, and you want Codex to continue from the local artifacts already on disk.
 
+![claude-session-handoff demo](./demo/assets/demo.gif)
+
+The repository now ships both:
+
+- a bundled Codex skill inside the plugin package for direct skill installs
+- a Codex plugin package for plugin-based installs and marketplace testing
+
 ## What it does
 
 - Finds recent local Claude sessions
@@ -13,6 +20,8 @@ This is for the common failure mode where Claude Code hit a token limit, lost co
 - Stops after the handoff so you can decide what happens next
 
 ## Why this exists
+
+Claude Code can burn through token budget and session limits fast. When that happens, the practical need is simple: continue the work in Codex without manually reconstructing the whole thread from scratch.
 
 The default recovery pattern is usually manual and messy: find the right transcript, inspect it, reconstruct intent, then restate the open thread to another agent. This skill makes that path deterministic and cheap.
 
@@ -27,6 +36,32 @@ The default recovery pattern is usually manual and messy: find the right transcr
 - Local Claude session transcripts on disk
 
 ## Install
+
+### Install as a Codex plugin
+
+This is the preferred path if you want the plugin to show up in Codex's plugin flow.
+
+From the repository root:
+
+```bash
+python3 scripts/install_plugin.py
+```
+
+If you prefer a copy instead of a symlink:
+
+```bash
+python3 scripts/install_plugin.py --mode copy
+```
+
+This installs the plugin into `~/plugins/claude-session-handoff` and adds it to your personal Codex marketplace at `~/.agents/plugins/marketplace.json`.
+
+Then restart Codex and open `/plugins`.
+
+If you invoke the bundled skill explicitly after plugin installation, Codex may show it in namespaced form:
+
+- `$claude-session-handoff:claude-session-handoff`
+
+### Install as a plain skill
 
 From the repository root:
 
@@ -55,11 +90,33 @@ After installation, prompts like these should trigger the skill:
 - `Recover a Claude Code session that ended and give me a handoff`
 - `Find my last 5 Claude sessions and ask which one to resume`
 
+Explicit invocation depends on how you installed it:
+
+- plain skill install: `$claude-session-handoff`
+- plugin install: `$claude-session-handoff:claude-session-handoff`
+- natural-language prompts also work through implicit matching
+
 Normal flow:
 
 1. Discover recent local Claude sessions
 2. Show a numbered picker
 3. Summarize the selected session into a Codex handoff
+
+## Plugin packaging
+
+The plugin package lives at:
+
+- `plugins/claude-session-handoff`
+
+The installable skill that SkillsLLM and manual skill installs rely on lives at:
+
+- `plugins/claude-session-handoff/skills/claude-session-handoff/SKILL.md`
+
+For repo-local testing, this repository also includes:
+
+- `.agents/plugins/marketplace.json`
+
+That lets Codex surface the plugin when you open this repository locally. The current public Codex docs still describe the official global Plugin Directory publishing flow as coming soon, so the supported path today is local, personal, or repo marketplace installation.
 
 ## Verify your setup
 
@@ -151,8 +208,10 @@ python3 -m unittest discover -s tests -v
 The repository includes:
 
 - `scripts/doctor.py` for local diagnostics
+- `scripts/install_plugin.py` for personal plugin installation
 - `.github/workflows/ci.yml` for cross-platform CI
 - `agents/openai.yaml` for packaged skill metadata
+- `plugins/claude-session-handoff/.codex-plugin/plugin.json` for Codex plugin packaging
 
 ## License
 

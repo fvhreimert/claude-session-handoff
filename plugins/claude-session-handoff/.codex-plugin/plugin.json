@@ -1,0 +1,39 @@
+{
+  "name": "claude-session-handoff",
+  "version": "0.1.0",
+  "description": "Recover ended Claude Code sessions into compact Codex handoffs from local transcripts.",
+  "author": {
+    "name": "Frederik Reimert",
+    "email": "frederikreimert@gmail.com",
+    "url": "https://github.com/fvhreimert"
+  },
+  "homepage": "https://github.com/fvhreimert/claude-session-handoff",
+  "repository": "https://github.com/fvhreimert/claude-session-handoff",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "claude",
+    "handoff",
+    "transcripts",
+    "recovery"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Resume Claude Session",
+    "shortDescription": "Recover an ended Claude Code session into a Codex handoff",
+    "longDescription": "Find recent local Claude Code transcripts, ask which session to resume, and turn the selected transcript into a compact Codex handoff without calling Claude in the normal path.",
+    "developerName": "Frederik Reimert",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "websiteURL": "https://github.com/fvhreimert/claude-session-handoff",
+    "defaultPrompt": [
+      "Resume my last Claude session for this repo.",
+      "Find my last 5 Claude sessions and ask which one to resume.",
+      "Recover a Claude Code session that ended and give me a handoff."
+    ],
+    "brandColor": "#1F6FEB"
+  }
+}

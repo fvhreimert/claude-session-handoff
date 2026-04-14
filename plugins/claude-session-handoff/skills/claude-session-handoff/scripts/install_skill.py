@@ -11,20 +11,13 @@ from pathlib import Path
 
 def parse_args() -> argparse.Namespace:
     default_mode = "copy" if platform.system() == "Windows" else "symlink"
-    default_source = (
-        Path(__file__).resolve().parent.parent
-        / "plugins"
-        / "claude-session-handoff"
-        / "skills"
-        / "claude-session-handoff"
-    )
     parser = argparse.ArgumentParser(
         description="Install the claude-session-handoff skill into a Codex skills directory."
     )
     parser.add_argument(
         "--source",
-        default=default_source,
-        help="Path to the local skill directory. Default: the bundled plugin skill directory.",
+        default=Path(__file__).resolve().parent.parent,
+        help="Path to the local skill directory. Default: this repository root.",
     )
     parser.add_argument(
         "--codex-home",
